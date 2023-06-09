@@ -27,44 +27,55 @@ async def cmd_start(message: types.Message):
 
 @dp.callback_query_handler(fetch_data_callback.filter(data="fetch"))
 async def process_callback_button1(callback_query: types.CallbackQuery):
-    
-    response
+    await callback_query.answer()
     startRow = 0
     endRow = 5000
+    df_list = []
     while True:
-        startRow = 0
-        endRow = 5000
         headers = {
             'X-Mpstats-TOKEN': '',
             'Content-Type': 'application/json'
         }
-
         payload = {
             'startRow': startRow,
             'endRow': endRow,
-            'filterModel': {},
+            'filterModel': {
+                'sales': {
+                    'filterType': 'number',
+                    'type': 'greaterThan',
+                    'filter': 100
+            }},
             'sortModel': [
                 {'colId': 'revenue', 'sort': 'desc'}
             ]
         }
-
+        
         params = {
             'path': 'Спорт'
         }
-        response = requests.post(url, headers=headers, params=params, json = payload)
+
+        response = requests.post(url, headers=headers, params=params, json=payload)
         if response.status_code == 200:
             data = response.json()
-            if data['data'] == []: break
-            df = pd.json_normalize(data["data"])
-            filename = "output.xlsx"
-            df.to_excel(filename, index=False)
-            with open(filename, "rb") as file:
-                await bot.send_document(callback_query.from_user.id, file, caption="Подавись")
-                os.remove(filename)
+            df_list.append(pd.json_normalize(data["data"]))
+            print(len(data['data']))
+            print(endRow)
+            if len(data['data']) < 5000:  # break if fewer than 5000 rows returned
+                break
+            startRow += 5000
+            endRow += 5000
         else:
             print(response.text)
             await bot.send_message(callback_query.from_user.id, f"Все обосралось {response.status_code}")
-        
+            break
+
+    if df_list:  # if df_list is not empty
+        df = pd.concat(df_list)  # concatenate all dataframes in df_list
+        filename = "output.xlsx"
+        df.to_excel(filename, index=False)
+        with open(filename, "rb") as file:
+            await bot.send_document(callback_query.from_user.id, file, caption="Ваши данные")
+        os.remove(filename)
     await callback_query.answer()
 
 
