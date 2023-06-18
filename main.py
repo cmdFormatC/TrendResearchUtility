@@ -6,13 +6,17 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.utils.callback_data import CallbackData
 import asyncio
 from urllib.parse import quote
-bot_token = ""
+from dotenv import load_dotenv
+
+#Загрузка env
+load_dotenv()
+
+bot_token = os.environ.get("BOT_TOKEN")
 bot = Bot(token=bot_token)
 url = 'https://mpstats.io/api/wb/get/category'
 
 dp = Dispatcher(bot)
 fetch_data_callback = CallbackData("fetch", "data")
-
 
 
 @dp.message_handler(commands='start')
@@ -33,7 +37,7 @@ async def process_callback_button1(callback_query: types.CallbackQuery):
     df_list = []
     while True:
         headers = {
-            'X-Mpstats-TOKEN': '',
+            'X-Mpstats-TOKEN': os.environ.get("API_TOKEN"),
             'Content-Type': 'application/json'
         }
         payload = {
